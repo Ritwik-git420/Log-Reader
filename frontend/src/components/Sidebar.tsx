@@ -3,10 +3,15 @@ import type { ChangeEvent } from "react";
 import { FolderOpen, Clock, Settings } from "lucide-react";
 import { uploadLog } from "../services/logservice";
 
-export default function Sidebar() {
+type SidebarProps = {
+	onFileOpened?: (file: File) => void | Promise<void>;
+};
+
+export default function Sidebar({ onFileOpened }: SidebarProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isUploading, setIsUploading] = useState(false);
 	const [uploadMessage, setUploadMessage] = useState("");
+	const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
 
 	const openFilePicker = () => {
 		fileInputRef.current?.click();
@@ -21,9 +26,11 @@ export default function Sidebar() {
 
 		setIsUploading(true);
 		setUploadMessage("");
+		setUploadedFileId(null);
 
 		try {
-			await uploadLog(file);
+			const uploadedLog = await uploadLog(file);
+			setUploadedFileId(uploadedLog.fileId);
 			setUploadMessage(`${file.name} uploaded`);
 		} catch (error) {
 			console.error("Failed to upload log:", error);
@@ -32,11 +39,12 @@ export default function Sidebar() {
 			setIsUploading(false);
 			event.target.value = "";
 		}
+		// onfileopened points to function in appjsx and passes the file to it it doesnt handle files
+		await onFileOpened?.(file);
 	};
 
 	return (
 		<aside className="flex h-screen w-64 flex-col border-r border-slate-800 bg-slate-950">
-			{/* Logo */}
 			<div className="border-b border-slate-800 p-6">
 				<h1 className="text-2xl font-bold text-cyan-400">
 					Log Explorer
@@ -46,7 +54,6 @@ export default function Sidebar() {
 				</p>
 			</div>
 
-			{/* Menu */}
 			<nav className="flex flex-1 flex-col gap-3 p-4">
 				<input
 					ref={fileInputRef}
@@ -71,15 +78,18 @@ export default function Sidebar() {
 						{uploadMessage}
 					</p>
 				)}
+				{uploadedFileId && (
+					<p className="break-all px-1 text-xs text-slate-500">
+						fileId: {uploadedFileId}
+					</p>
+				)}
 
 				<button className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-300 transition hover:bg-slate-800">
 					<Clock size={20} />
 					Recent Files
 				</button>
-
 			</nav>
 
-			{/* Footer */}
 			<div className="border-t border-slate-800 p-4">
 				<button className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-slate-300 transition hover:bg-slate-800">
 					<Settings size={20} />

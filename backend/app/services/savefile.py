@@ -24,7 +24,7 @@ def save_uploaded_file(file):
         shutil.copyfileobj(file.file, buffer)
 
     return {
-        "id": file_id,
+        "fileId": file_id,
         "filename": file.filename,
         "path": file_path
     }
