@@ -2,16 +2,15 @@ import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { FolderOpen, Clock, Settings } from "lucide-react";
 import { uploadLog } from "../services/logservice";
+import { useAppDispatch } from "../store/hooks";
+import { addFileId } from "../store/logFileSlice";
 
-type SidebarProps = {
-	onFileOpened?: (file: File) => void | Promise<void>;
-};
-
-export default function Sidebar({ onFileOpened }: SidebarProps) {
+export default function Sidebar() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isUploading, setIsUploading] = useState(false);
 	const [uploadMessage, setUploadMessage] = useState("");
 	const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
+	const dispatch = useAppDispatch();
 
 	const openFilePicker = () => {
 		fileInputRef.current?.click();
@@ -31,6 +30,9 @@ export default function Sidebar({ onFileOpened }: SidebarProps) {
 		try {
 			const uploadedLog = await uploadLog(file);
 			setUploadedFileId(uploadedLog.fileId);
+
+			// stores  the current file and active file to redux
+			dispatch(addFileId(uploadedLog.fileId));
 			setUploadMessage(`${file.name} uploaded`);
 		} catch (error) {
 			console.error("Failed to upload log:", error);
@@ -39,8 +41,6 @@ export default function Sidebar({ onFileOpened }: SidebarProps) {
 			setIsUploading(false);
 			event.target.value = "";
 		}
-		// onfileopened points to function in appjsx and passes the file to it it doesnt handle files
-		await onFileOpened?.(file);
 	};
 
 	return (
