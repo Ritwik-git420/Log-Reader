@@ -35,6 +35,44 @@ const logFileSlice = createSlice({
 		setActiveFileId: (state, action: PayloadAction<string>) => {
 			state.activeFileId = action.payload;
 		},
+		//file close function 
+		closeLogFile: (state, action: PayloadAction<string>) => {
+			const closedFileIndex = state.files.findIndex(
+				(file) => file.fileId === action.payload,
+			);
+
+			if (closedFileIndex === -1) {
+				return;
+			}
+			//remove the file from redux
+			state.files.splice(closedFileIndex, 1);
+
+			//if the closed tab was inactive we are done
+			if (state.activeFileId !== action.payload) {
+				return;
+			}
+
+			//code for picking next active file
+			let nextActiveFile: LogFile | null = null;
+
+			if (state.files.length === 0) {
+				nextActiveFile = null;
+			}
+
+			// Is there still a tab at the same index?
+			// (This will be the tab to the right of the closed one.)
+			else if (state.files[closedFileIndex]) {
+				nextActiveFile = state.files[closedFileIndex];
+			}
+
+			// Otherwise the closed tab was the last one,
+			// so activate the previous tab.
+			else {
+				nextActiveFile = state.files[closedFileIndex - 1];
+			}
+
+			state.activeFileId = nextActiveFile?.fileId ?? null;
+		},
 		clearLogFiles: (state) => {
 			state.files = [];
 			state.activeFileId = null;
@@ -42,6 +80,6 @@ const logFileSlice = createSlice({
 	},
 });
 
-export const { addLogFile, setActiveFileId, clearLogFiles } =
+export const { addLogFile, setActiveFileId, closeLogFile, clearLogFiles } =
 	logFileSlice.actions;
 export default logFileSlice.reducer;
