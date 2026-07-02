@@ -3,7 +3,7 @@ import type { ChangeEvent } from "react";
 import { FolderOpen, Clock, Settings } from "lucide-react";
 import { uploadLog } from "../services/logservice";
 import { useAppDispatch } from "../store/hooks";
-import { addFileId } from "../store/logFileSlice";
+import { addLogFile } from "../store/logFileSlice";
 
 export default function Sidebar() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,11 +28,17 @@ export default function Sidebar() {
 		setUploadedFileId(null);
 
 		try {
-			const uploadedLog = await uploadLog(file);
+			//upload log function which sends the file to backend imported from /service
+			const uploadedLog = await uploadLog(file); 
 			setUploadedFileId(uploadedLog.fileId);
 
-			// stores  the current file and active file to redux
-			dispatch(addFileId(uploadedLog.fileId));
+			// stores the current file and active file to redux
+			dispatch(
+				addLogFile({
+					fileId: uploadedLog.fileId,
+					filename: uploadedLog.filename,
+				}),
+			);
 			setUploadMessage(`${file.name} uploaded`);
 		} catch (error) {
 			console.error("Failed to upload log:", error);

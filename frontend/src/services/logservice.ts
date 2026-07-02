@@ -10,8 +10,9 @@ export async function uploadLog(file: File): Promise<UploadLogResponse> {
 
     const formData = new FormData();
 
+    //file selected by user from sidebar which passed to this function as a prop
     formData.append("file", file);
-
+    
     const response = await api.post<UploadLogResponse>(
         "/log/upload",
         formData,
@@ -24,3 +25,5 @@ export async function uploadLog(file: File): Promise<UploadLogResponse> {
 
     return response.data;
 }
+
+

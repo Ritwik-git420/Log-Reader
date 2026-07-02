@@ -1,14 +1,19 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
+export type LogFile = {
+	fileId: string;
+	filename: string;
+};
+
 //array to store multiple file ids, to handle multiple files
 type LogFileState = {
-	fileIds: string[];
+	files: LogFile[];
 	activeFileId: string | null;
 };
 
 const initialState: LogFileState = {
-	fileIds: [],
+	files: [],
 	activeFileId: null,
 };
 
@@ -16,22 +21,27 @@ const logFileSlice = createSlice({
 	name: "logFile",
 	initialState,
 	reducers: {
-		addFileId: (state, action: PayloadAction<string>) => {
-			if (!state.fileIds.includes(action.payload)) {
-				state.fileIds.push(action.payload);
+		addLogFile: (state, action: PayloadAction<LogFile>) => {
+			const alreadyOpen = state.files.some(
+				(file) => file.fileId === action.payload.fileId,
+			);
+
+			if (!alreadyOpen) {
+				state.files.push(action.payload);
 			}
 
-			state.activeFileId = action.payload;
+			state.activeFileId = action.payload.fileId;
 		},
 		setActiveFileId: (state, action: PayloadAction<string>) => {
 			state.activeFileId = action.payload;
 		},
-		clearFileIds: (state) => {
-			state.fileIds = [];
+		clearLogFiles: (state) => {
+			state.files = [];
 			state.activeFileId = null;
 		},
 	},
 });
 
-export const { addFileId, setActiveFileId, clearFileIds } = logFileSlice.actions;
+export const { addLogFile, setActiveFileId, clearLogFiles } =
+	logFileSlice.actions;
 export default logFileSlice.reducer;

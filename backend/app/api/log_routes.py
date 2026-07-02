@@ -10,3 +10,11 @@ router = APIRouter(prefix="/api/log", tags=["Log"])
 async def upload_log(file: UploadFile = File(...)):
     return save_uploaded_file(file)
 
+@router.get("/{file_id}/content")
+def get_log_content(file_id: str):
+    content = read_saved_file(file_id)
+
+    return {
+        "fileId": file_id,
+        "content": content
+    }
