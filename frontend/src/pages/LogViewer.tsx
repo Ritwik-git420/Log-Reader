@@ -1,13 +1,38 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import TabBar from "../components/TabBar";
 import { useAppSelector } from "../store/hooks";
+import { getLogContent } from "../services/logservice";
 
 function LogViewer() {
   const files = useAppSelector((state) => state.logFile.files);
   const activeFileId = useAppSelector((state) => state.logFile.activeFileId);
   const activeFile = files.find((file) => file.fileId === activeFileId) ?? files[0] ?? null;
-  
-  
+  const [content, setContent] = useState("");
+
+  useEffect(() => {
+    if (!activeFileId) {
+      setContent("");
+      return;
+    }
+
+    const fileId = activeFileId;
+
+    async function loadContent() {
+      setContent("Loading file content...");
+
+      try {
+        //loading content from backend
+        const data = await getLogContent(fileId);
+        setContent(data.content);
+      } catch (error) {
+        console.error("Failed to load log content:", error);
+        setContent("Failed to load file content.");
+      }
+    }
+
+    loadContent();
+  }, [activeFileId]);
+
   return (
     <div className="flex h-[calc(100vh-3rem)] flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl shadow-black/20">
       <div className="border-b border-slate-800 px-4 py-3">
@@ -36,7 +61,18 @@ function LogViewer() {
             </div>
 
             <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-7 text-slate-300">
-              Backend file content will load here next.
+              <div className="font-mono text-sm leading-7">
+                {content.split("\n").map((line, index) => (
+                  <div key={index} className="grid grid-cols-[4rem_1fr]">
+                    <span className="select-none text-right pr-4 text-slate-600">
+                      {index + 1}
+                    </span>
+                    <span className="whitespace-pre-wrap break-words text-slate-300">
+                      {line}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </pre>
           </div>
         </>

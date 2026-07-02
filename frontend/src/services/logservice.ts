@@ -5,6 +5,11 @@ export type UploadLogResponse = {
     filename: string;
     path: string;
 };
+// type for loading file from backend
+export type LogContentResponse = {
+	fileId: string;
+	content: string;
+};
 
 export async function uploadLog(file: File): Promise<UploadLogResponse> {
 
@@ -24,6 +29,11 @@ export async function uploadLog(file: File): Promise<UploadLogResponse> {
     );
 
     return response.data;
+}
+//call to backend to load file
+export async function getLogContent(fileId: string): Promise<LogContentResponse> {
+	const response = await api.get<LogContentResponse>(`/log/${fileId}/content`);
+	return response.data;
 }
 
 

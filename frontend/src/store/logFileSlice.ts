@@ -7,7 +7,7 @@ export type LogFile = {
 };
 
 //array to store multiple file ids, to handle multiple files
-type LogFileState = {
+export type LogFileState = {
 	files: LogFile[];
 	activeFileId: string | null;
 };

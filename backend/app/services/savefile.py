@@ -28,3 +28,13 @@ def save_uploaded_file(file):
         "filename": file.filename,
         "path": file_path
     }
+#function to read saved files
+def read_saved_file(file_id: str):
+    for filename in os.listdir(UPLOAD_DIR):
+        if filename.startswith(file_id):
+            file_path = os.path.join(UPLOAD_DIR, filename)
+
+            with open(file_path, "r", encoding="utf-8", errors="replace") as file:
+                return file.read()
+
+    raise FileNotFoundError("File not found")
