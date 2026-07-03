@@ -1,15 +1,20 @@
 import { useRef, useState } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, PointerEvent } from "react";
 import { FolderOpen, Clock, Settings } from "lucide-react";
-import { uploadLog } from "../services/logservice";
-import { useAppDispatch } from "../store/hooks";
-import { addLogFile } from "../store/logFileSlice";
+import { uploadLog } from "../../services/logservice";
+import { openFolder } from "../../services/folderService";
+import { useAppDispatch } from "../../store/hooks";
+import { addLogFile } from "../../store/logFileSlice";
+import FolderPathInput from "./FolderPathInput";
 
-export default function Sidebar() {
+type SidebarProps = {
+	width: number;
+	onResizeStart: (event: PointerEvent<HTMLDivElement>) => void;
+};
+
+export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isUploading, setIsUploading] = useState(false);
-	const [uploadMessage, setUploadMessage] = useState("");
-	const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
 	const dispatch = useAppDispatch();
 
 	const openFilePicker = () => {
@@ -24,13 +29,10 @@ export default function Sidebar() {
 		}
 
 		setIsUploading(true);
-		setUploadMessage("");
-		setUploadedFileId(null);
 
 		try {
 			//upload log function which sends the file to backend imported from /service
-			const uploadedLog = await uploadLog(file); 
-			setUploadedFileId(uploadedLog.fileId);
+			const uploadedLog = await uploadLog(file);
 
 			// stores the current file and active file to redux
 			dispatch(
@@ -39,10 +41,8 @@ export default function Sidebar() {
 					filename: uploadedLog.filename,
 				}),
 			);
-			setUploadMessage(`${file.name} uploaded`);
 		} catch (error) {
 			console.error("Failed to upload log:", error);
-			setUploadMessage("Upload failed");
 		} finally {
 			setIsUploading(false);
 			event.target.value = "";
@@ -50,7 +50,10 @@ export default function Sidebar() {
 	};
 
 	return (
-		<aside className="flex h-screen w-64 flex-col border-r border-slate-800 bg-slate-950">
+		<aside
+			className="relative flex h-screen shrink-0 flex-col border-r border-slate-800 bg-slate-950"
+			style={{ width }}
+		>
 			<div className="border-b border-slate-800 p-6">
 				<h1 className="text-2xl font-bold text-cyan-400">
 					Log Explorer
@@ -60,7 +63,7 @@ export default function Sidebar() {
 				</p>
 			</div>
 
-			<nav className="flex flex-1 flex-col gap-3 p-4">
+			<nav className="flex flex-1 flex-col gap-4 p-4">
 				<input
 					ref={fileInputRef}
 					type="file"
@@ -79,16 +82,12 @@ export default function Sidebar() {
 					{isUploading ? "Uploading..." : "Open Log"}
 				</button>
 
-				{uploadMessage && (
-					<p className="px-1 text-sm text-slate-400" aria-live="polite">
-						{uploadMessage}
-					</p>
-				)}
-				{uploadedFileId && (
-					<p className="break-all px-1 text-xs text-slate-500">
-						fileId: {uploadedFileId}
-					</p>
-				)}
+				<div className="h-px bg-slate-800" />
+
+				{/* passes that function into FolderPathInput.tsx as the onOpenFolder prop */}
+				<FolderPathInput onOpenFolder={openFolder} />
+
+				<div className="h-px bg-slate-800" />
 
 				<button className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-300 transition hover:bg-slate-800">
 					<Clock size={20} />
@@ -102,6 +101,14 @@ export default function Sidebar() {
 					Settings
 				</button>
 			</div>
+
+			<div
+				className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent transition hover:bg-cyan-500/70"
+				role="separator"
+				aria-label="Resize sidebar"
+				aria-orientation="vertical"
+				onPointerDown={onResizeStart}
+			/>
 		</aside>
 	);
 }
