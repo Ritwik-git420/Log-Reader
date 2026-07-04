@@ -6,7 +6,6 @@
 
 - Suppose the folder looks like this:
 
-```text
 C:\Logs
 ├── 📁 Backend
 ├── 📁 Frontend
@@ -17,7 +16,6 @@ C:\Logs
 
 - Conceptually, `entries` contains:
 
-```text
 [
   Backend,
   Frontend,
@@ -37,7 +35,6 @@ C:\Logs
 
 - For example, `Backend` is represented as:
 
-```text
 DirEntry
 ├── name = "Backend"
 ├── path = "C:\Logs\Backend"
@@ -49,23 +46,11 @@ DirEntry
 
 - Similarly, `app.log` becomes:
 
-```text
 DirEntry
 ├── name = "app.log"
 ├── path = "C:\Logs\app.log"
 ├── is_dir() = False
 └── is_file() = True
-```
 
-## Directory vs File
+## How to use recursion to scan the folders and files
 
-- A directory (folder) can contain other things.
-- A file contains data.
-- A file cannot contain more files.
-
-## Simple difference
-
-- Folder → contains children
-- File → contains data
-
-- That is the biggest difference.

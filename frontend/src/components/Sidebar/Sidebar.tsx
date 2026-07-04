@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { ChangeEvent, PointerEvent } from "react";
 import { FolderOpen, Clock, Settings } from "lucide-react";
 import { uploadLog } from "../../services/logservice";
@@ -19,6 +19,7 @@ export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 	const [isUploading, setIsUploading] = useState(false);
 	const [rootFolder, setRootFolder] = useState<FolderNode | null>(null);
 	const dispatch = useAppDispatch();
+	const LAST_FOLDER_PATH_KEY = "logreader:lastFolderPath";
 
 	const openFilePicker = () => {
 		fileInputRef.current?.click();
@@ -30,23 +31,34 @@ export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 
 			if ("type" in folder && folder.type === "folder") {
 				setRootFolder(folder);
+				localStorage.setItem(LAST_FOLDER_PATH_KEY, path);
+				return true;
 			}
 		} catch (error) {
 			console.error("Failed to open folder:", error);
+			localStorage.removeItem(LAST_FOLDER_PATH_KEY);
 		}
+
+		return false;
 	};
+
+	useEffect(() => {
+		const savedPath = localStorage.getItem(LAST_FOLDER_PATH_KEY);
+		if (savedPath) {
+			handleOpenFolder(savedPath);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
 
-		if (!file) {
-			return;
-		}
+		if (!file) return;
 
 		setIsUploading(true);
 
 		try {
-			//upload log function which sends the file to backend imported from /service
+			//upload log function which sends the file to backend 
 			const uploadedLog = await uploadLog(file);
 
 			// stores the current file and active file to redux
@@ -88,20 +100,20 @@ export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 				/>
 
 				<button
-					className="flex items-center gap-3 rounded-lg bg-cyan-600 px-4 py-3 font-medium text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-700"
+					className="flex w-full items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-left text-sm font-medium text-slate-200 shadow-sm shadow-black/20 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
 					type="button"
 					onClick={openFilePicker}
 					disabled={isUploading}
 				>
-					<FolderOpen size={20} />
+					<FolderOpen size={16} className="text-cyan-400" />
 					{isUploading ? "Uploading..." : "Open Log"}
 				</button>
 
 				<div className="h-px bg-slate-800" />
 
-				{!rootFolder ? (
-					<FolderPathInput onOpenFolder={handleOpenFolder} />
-				) : (
+				<FolderPathInput hasFolder={Boolean(rootFolder)} onOpenFolder={handleOpenFolder} />
+
+				{rootFolder && (
 					<ExplorerTree rootFolder={rootFolder} />
 				)}
 
