@@ -5,7 +5,9 @@ import { uploadLog } from "../../services/logservice";
 import { openFolder } from "../../services/folderService";
 import { useAppDispatch } from "../../store/hooks";
 import { addLogFile } from "../../store/logFileSlice";
+import type { FolderNode } from "../../types/explorer";
 import FolderPathInput from "./FolderPathInput";
+import ExplorerTree from "./ExplorerTree";
 
 type SidebarProps = {
 	width: number;
@@ -15,10 +17,23 @@ type SidebarProps = {
 export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isUploading, setIsUploading] = useState(false);
+	const [rootFolder, setRootFolder] = useState<FolderNode | null>(null);
 	const dispatch = useAppDispatch();
 
 	const openFilePicker = () => {
 		fileInputRef.current?.click();
+	};
+
+	const handleOpenFolder = async (path: string) => {
+		try {
+			const folder = await openFolder(path);
+
+			if ("type" in folder && folder.type === "folder") {
+				setRootFolder(folder);
+			}
+		} catch (error) {
+			console.error("Failed to open folder:", error);
+		}
 	};
 
 	const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -84,8 +99,11 @@ export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 
 				<div className="h-px bg-slate-800" />
 
-				{/* passes that function into FolderPathInput.tsx as the onOpenFolder prop */}
-				<FolderPathInput onOpenFolder={openFolder} />
+				{!rootFolder ? (
+					<FolderPathInput onOpenFolder={handleOpenFolder} />
+				) : (
+					<ExplorerTree rootFolder={rootFolder} />
+				)}
 
 				<div className="h-px bg-slate-800" />
 

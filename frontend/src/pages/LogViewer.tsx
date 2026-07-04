@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TabBar from "../components/TabBar";
 import { useAppSelector } from "../store/hooks";
 import { getLogContent } from "../services/logservice";
@@ -6,8 +6,8 @@ import { getLogContent } from "../services/logservice";
 function LogViewer() {
   const files = useAppSelector((state) => state.logFile.files);
   const activeFileId = useAppSelector((state) => state.logFile.activeFileId);
-  const activeFile = files.find((file) => file.fileId === activeFileId) ?? files[0] ?? null;
   const [content, setContent] = useState("");
+  const logScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!activeFileId) {
@@ -33,6 +33,18 @@ function LogViewer() {
     loadContent();
   }, [activeFileId]);
 
+  useEffect(() => {
+    const scrollContainer = logScrollRef.current;
+
+    if (!scrollContainer) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    });
+  }, [content, activeFileId]);
+
   return (
     <div className="flex h-[calc(100vh-3rem)] flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl shadow-black/20">
       <div className="border-b border-slate-800 px-4 py-3">
@@ -50,16 +62,10 @@ function LogViewer() {
         <>
           <TabBar />
 
-          <div className="flex-1 overflow-auto bg-slate-950 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <h3 className="font-medium text-slate-200">{activeFile?.filename}</h3>
-                <p className="break-all text-sm text-slate-500">
-                  {activeFile ? `fileId: ${activeFile.fileId}` : ""}
-                </p>
-              </div>
-            </div>
-
+          <div
+            ref={logScrollRef}
+            className="scrollbar-hidden flex-1 overflow-auto bg-slate-950 p-4"
+          >
             <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-7 text-slate-300">
               <div className="font-mono text-sm leading-7">
                 {content.split("\n").map((line, index) => (

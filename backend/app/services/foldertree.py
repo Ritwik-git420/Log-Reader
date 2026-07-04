@@ -8,16 +8,35 @@ def scan_folder(path):
             "message": "Invalid folder path"
         }
     
+    # Create the root folder object
+    folder_node = {
+        "name": os.path.basename(path),
+        "path": path,
+        "type": "folder",
+        "children": []
+    }
+    
     entries = os.scandir(path)
 
     for entry in entries:
-
+        #code for appending file
         if entry.is_file():
-            print("FILE:", entry.name)
-
+            if entry.name.endswith((".log", ".txt")):
+                file_node = {
+                    "name": entry.name,
+                    "path": entry.path,
+                    "type": "file"
+                }
+                folder_node["children"].append(file_node)
+             
+        #this appends folder
         elif entry.is_dir():
-            print("DIR :", entry.name)
+            directory_node = {
+                "name": entry.name,
+                "path": entry.path,
+                "type": "folder"
+            }
 
-    return {
-        "message": "Folder scanned"
-    }
+            folder_node["children"].append(directory_node)
+
+    return folder_node
