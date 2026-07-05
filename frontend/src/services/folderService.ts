@@ -3,7 +3,6 @@ import type { OpenFolderRequest, OpenFolderResponse } from "../types/explorer";
 
 // folder path comes in string format
 export async function openFolder(path: string): Promise<OpenFolderResponse> {
-
     const body: OpenFolderRequest = {
         path,
     };
@@ -14,4 +13,15 @@ export async function openFolder(path: string): Promise<OpenFolderResponse> {
     );
 
     return response.data;
+}
+
+export type FileContentResponse =
+  | { path: string; filename: string; content: string }
+  | { message: string };
+
+export async function openFileByPath(path: string): Promise<FileContentResponse> {
+  const response = await api.get<FileContentResponse>("log/file/content", {
+    params: { path },
+  });
+  return response.data;
 }

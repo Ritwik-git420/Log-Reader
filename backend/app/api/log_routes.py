@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from app.services.savefile import save_uploaded_file, read_saved_file
 from app.services.foldertree import scan_folder
-
+from app.services.filreader import read_file_by_path
 
 class OpenFolderRequest(BaseModel):
     path: str
@@ -39,3 +39,8 @@ def get_log_content(file_id: str):
 @router.post("/folder/open")
 async def open_folder(request: OpenFolderRequest):
     return scan_folder(request.path)
+
+#route for opening file from folder tree
+@router.get("/file/content")
+async def get_file_content_by_path(path: str):
+    return read_file_by_path(path)

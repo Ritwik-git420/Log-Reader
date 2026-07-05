@@ -66,6 +66,7 @@ export default function Sidebar({ width, onResizeStart }: SidebarProps) {
 				addLogFile({
 					fileId: uploadedLog.fileId,
 					filename: uploadedLog.filename,
+					source: "upload"
 				}),
 			);
 		} catch (error) {

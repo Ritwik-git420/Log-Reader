@@ -4,6 +4,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 export type LogFile = {
 	fileId: string;
 	filename: string;
+	source: "upload" | "folder";
 };
 
 //array to store multiple file ids, to handle multiple files

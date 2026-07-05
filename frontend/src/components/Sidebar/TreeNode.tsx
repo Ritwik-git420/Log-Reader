@@ -2,6 +2,9 @@ import { useState } from "react";
 import type { ExplorerNode } from "../../types/explorer";
 import { openFolder } from "../../services/folderService";
 import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, Loader2 } from "lucide-react";
+import { useAppDispatch } from "../../store/hooks";
+import { addLogFile } from "../../store/logFileSlice";
+import { openFileByPath } from "../../services/folderService";
 
 type TreeNodeProps = {
     node: ExplorerNode;
@@ -13,15 +16,17 @@ export default function TreeNode({ node, depth }: TreeNodeProps) {
     const [children, setChildren] = useState<ExplorerNode[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
+    const dispatch = useAppDispatch()
     const isFolder = node.type === "folder";
 
     const handleClick = async () => {
         if (!isFolder) {
-            
-            console.log("File clicked:", node.path);
             return;
         }
+
+        dispatch(
+            addLogFile({ fileId: node.path, filename: node.name, source: "folder" }),
+        );
 
         if (!expanded && children === null) {
             setLoading(true);
@@ -49,6 +54,7 @@ export default function TreeNode({ node, depth }: TreeNodeProps) {
         <div>
             <button
                 onClick={handleClick}
+                onDoubleClick={handleDoubleClick}
                 style={{ paddingLeft: `${depth * 16 + 12}px` }}
                 className="group flex w-full items-center gap-2 rounded-md py-1.5 pr-3 text-left text-sm text-slate-300 transition  hover:bg-slate-800 hover:text-white active:translate-x-0"
                 type="button"
