@@ -20,3 +20,6 @@ def read_file_by_path(path: str):
         }
     except OSError as e:
         return {"message": f"Failed to read file: {e}"}
+    except Exception as e:
+        # catch-all so an unexpected error never escapes uncaught -
+        return {"message": f"Unexpected error reading file: {e}"}

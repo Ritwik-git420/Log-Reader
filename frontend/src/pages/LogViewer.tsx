@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import TabBar from "../components/TabBar";
 import { useAppSelector } from "../store/hooks";
 import { getLogContent } from "../services/logservice";
+import { openFileByPath } from "../services/folderService";
 
 function LogViewer() {
   const files = useAppSelector((state) => state.logFile.files);
@@ -15,15 +16,24 @@ function LogViewer() {
       return;
     }
 
-    const fileId = activeFileId;
+    const activeFile = files.find((f) => f.fileId === activeFileId);
+    if (!activeFile) return;
 
     async function loadContent() {
       setContent("Loading file content...");
 
       try {
-        //loading content from backend
-        const data = await getLogContent(fileId);
-        setContent(data.content);
+        //loading content from backend - different source, different endpoint
+        const data =
+          activeFile!.source === "folder"
+            ? await openFileByPath(activeFile!.fileId)
+            : await getLogContent(activeFile!.fileId);
+
+        if ("content" in data) {
+          setContent(data.content);
+        } else {
+          setContent(data.message);
+        }
       } catch (error) {
         console.error("Failed to load log content:", error);
         setContent("Failed to load file content.");
@@ -31,7 +41,7 @@ function LogViewer() {
     }
 
     loadContent();
-  }, [activeFileId]);
+  }, [activeFileId, files]);
 
   useEffect(() => {
     const scrollContainer = logScrollRef.current;

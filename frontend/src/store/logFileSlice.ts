@@ -36,6 +36,7 @@ const logFileSlice = createSlice({
 		setActiveFileId: (state, action: PayloadAction<string>) => {
 			state.activeFileId = action.payload;
 		},
+		
 		//file close function 
 		closeLogFile: (state, action: PayloadAction<string>) => {
 			const closedFileIndex = state.files.findIndex(

@@ -16,14 +16,10 @@ router = APIRouter(prefix="/api/log", tags=["Log"])
 async def upload_log(file: UploadFile = File(...)):
     return save_uploaded_file(file)
 
-@router.get("/{file_id}/content")
-def get_log_content(file_id: str):
-    content = read_saved_file(file_id)
-
-    return {
-        "fileId": file_id,
-        "content": content
-    }
+#route for opening file from folder tree
+@router.get("/file/content")
+def get_file_content_by_path(path: str):
+    return read_file_by_path(path)
 
 #route for loading file
 @router.get("/{file_id}/content")
@@ -40,7 +36,3 @@ def get_log_content(file_id: str):
 async def open_folder(request: OpenFolderRequest):
     return scan_folder(request.path)
 
-#route for opening file from folder tree
-@router.get("/file/content")
-async def get_file_content_by_path(path: str):
-    return read_file_by_path(path)

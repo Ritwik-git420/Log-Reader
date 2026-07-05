@@ -24,10 +24,6 @@ export default function TreeNode({ node, depth }: TreeNodeProps) {
             return;
         }
 
-        dispatch(
-            addLogFile({ fileId: node.path, filename: node.name, source: "folder" }),
-        );
-
         if (!expanded && children === null) {
             setLoading(true);
             setError(null);
@@ -48,6 +44,16 @@ export default function TreeNode({ node, depth }: TreeNodeProps) {
         }
 
         setExpanded((prev) => !prev);
+    };
+
+        const handleDoubleClick = () => {
+        if (isFolder) {
+            return; // double-clicking a folder does nothing, only files open
+        }
+    
+        dispatch(
+            addLogFile({ fileId: node.path, filename: node.name, source: "folder" }),
+        );
     };
 
     return (
