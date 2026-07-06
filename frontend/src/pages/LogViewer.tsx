@@ -3,6 +3,7 @@ import TabBar from "../components/TabBar";
 import { useAppSelector } from "../store/hooks";
 import { getLogContent } from "../services/logservice";
 import { openFileByPath } from "../services/folderService";
+import { watchFileChanges } from "../services/filewatch";
 
 function LogViewer() {
   const files = useAppSelector((state) => state.logFile.files);
@@ -54,6 +55,21 @@ function LogViewer() {
       scrollContainer.scrollTop = scrollContainer.scrollHeight;
     });
   }, [content, activeFileId]);
+
+  // to track live updates in the active file using watchdog
+  useEffect(() => {
+    if (!activeFileId) return;  
+    //only folder opened files are tracked for now
+    const activeFile = files.find((f) => f.fileId === activeFileId);
+    if (!activeFile || activeFile.source !== "folder") return;
+
+    const stopWatching = watchFileChanges(activeFile.fileId, (newContent) => {
+      setContent((prev) => prev + newContent);
+    });
+
+    return () => stopWatching();
+  }, [content , activeFileId]);
+  
 
   return (
     <div className="flex h-[calc(100vh-3rem)] flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl shadow-black/20">
