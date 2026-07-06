@@ -1,9 +1,11 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, Request, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.services.savefile import save_uploaded_file, read_saved_file
 from app.services.foldertree import scan_folder
 from app.services.filreader import read_file_by_path
+from app.services.watchdog import tail_file
 
 class OpenFolderRequest(BaseModel):
     path: str
@@ -20,6 +22,13 @@ async def upload_log(file: UploadFile = File(...)):
 @router.get("/file/content")
 def get_file_content_by_path(path: str):
     return read_file_by_path(path)
+
+@router.get("/file/watch")
+async def watch_file(path: str, request: Request):
+    return StreamingResponse(
+        tail_file(path, request),
+        media_type="text/event-stream",
+    )
 
 #route for loading file
 @router.get("/{file_id}/content")

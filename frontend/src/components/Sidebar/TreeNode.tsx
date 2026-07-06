@@ -4,7 +4,6 @@ import { openFolder } from "../../services/folderService";
 import { ChevronDown, ChevronRight, FileText, Folder, FolderOpen, Loader2 } from "lucide-react";
 import { useAppDispatch } from "../../store/hooks";
 import { addLogFile } from "../../store/logFileSlice";
-import { openFileByPath } from "../../services/folderService";
 
 type TreeNodeProps = {
     node: ExplorerNode;
