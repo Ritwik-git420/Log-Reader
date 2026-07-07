@@ -5,11 +5,14 @@ import { getLogContent } from "../services/logservice";
 import { openFileByPath } from "../services/folderService";
 import { watchFileChanges } from "../services/filewatch";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import Searchbar from "../components/Searchbar";
 
 function LogViewer() {
     const files = useAppSelector((state) => state.logFile.files);
     const activeFileId = useAppSelector((state) => state.logFile.activeFileId);
     const [content, setContent] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
     const logScrollRef = useRef<HTMLDivElement>(null);
     const lines = useMemo(() => content.split("\n"), [content]);
     const rowVirtualizer = useVirtualizer({
@@ -18,6 +21,22 @@ function LogViewer() {
         estimateSize: () => 28,
         overscan: 10,
     });
+    
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+    const matchingLineIndexes = useMemo(() => {
+        if (!normalizedSearchTerm)  return [];   //if nothing typed in search we return simply
+
+        return lines.reduce<number[]>((matches, line, index) => {
+            if (line.toLowerCase().includes(normalizedSearchTerm)) {
+                matches.push(index);
+            }
+
+            return matches;
+        }, []);
+    }, [lines, normalizedSearchTerm]);
+    const currentMatchLineIndex = matchingLineIndexes[currentMatchIndex];
+
 
     useEffect(() => {
         if (!activeFileId) {
@@ -64,6 +83,18 @@ function LogViewer() {
         });
     }, [content, activeFileId]);
 
+    useEffect(() => {
+        if (matchingLineIndexes.length === 0) {
+            setCurrentMatchIndex(-1);
+            return;
+        }
+
+        setCurrentMatchIndex(0);
+        rowVirtualizer.scrollToIndex(matchingLineIndexes[0], {
+            align: "center",
+        });
+    }, [matchingLineIndexes, rowVirtualizer]);
+
     // to track live updates in the active file using watchdog
     useEffect(() => {
         if (!activeFileId) return;
@@ -78,14 +109,63 @@ function LogViewer() {
         return () => stopWatching();
     }, [files, activeFileId]);
 
+    function goToMatch(matchIndex: number) {
+        const lineIndex = matchingLineIndexes[matchIndex];
+
+        if (lineIndex === undefined) {
+            return;
+        }
+
+        setCurrentMatchIndex(matchIndex);
+        rowVirtualizer.scrollToIndex(lineIndex, {
+            align: "center",
+        });
+    }
+
+    function goToNextMatch() {
+        if (matchingLineIndexes.length === 0) {
+            return;
+        }
+
+        const nextMatchIndex =
+            currentMatchIndex >= matchingLineIndexes.length - 1
+                ? 0
+                : currentMatchIndex + 1;
+
+        goToMatch(nextMatchIndex);
+    }
+
+    function goToPreviousMatch() {
+        if (matchingLineIndexes.length === 0) {
+            return;
+        }
+
+        const previousMatchIndex =
+            currentMatchIndex <= 0
+                ? matchingLineIndexes.length - 1
+                : currentMatchIndex - 1;
+
+        goToMatch(previousMatchIndex);
+    }
+
 
     return (
         <div className="flex h-[calc(100vh-3rem)] flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl shadow-black/20">
-            <div className="border-b border-slate-800 px-4 py-3">
-                <h2 className="text-lg font-semibold text-slate-100">Log Viewer</h2>
-                <p className="text-sm text-slate-400">
-                    Open a file and it will appear here as a tab.
-                </p>
+            <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-4 py-3">
+                <div className="min-w-0">
+                    <h2 className="text-lg font-semibold text-slate-100">Log Viewer</h2>
+                    <p className="text-sm text-slate-400">
+                        Open a file and it will appear here as a tab.
+                    </p>
+                </div>
+                <Searchbar
+                    value={searchTerm}
+                    onChange={setSearchTerm}
+                    currentMatchNumber={currentMatchIndex + 1}
+                    matchCount={matchingLineIndexes.length}
+                    onNextMatch={goToNextMatch}
+                    onPreviousMatch={goToPreviousMatch}
+                />
             </div>
 
             {files.length === 0 ? (
@@ -94,7 +174,9 @@ function LogViewer() {
                 </div>
             ) : (
                 <>
-                    <TabBar />
+                    <div className="flex items-center gap-3 border-b border-slate-800 bg-slate-900 px-3 py-2">
+                        <TabBar />
+                    </div>
 
                     <div
                         ref={logScrollRef}
@@ -108,14 +190,24 @@ function LogViewer() {
                         >
                             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                                 const line = lines[virtualRow.index];
+                                const isCurrentMatch = virtualRow.index === currentMatchLineIndex;
+                                const isSearchMatch =
+                                    normalizedSearchTerm &&
+                                    line.toLowerCase().includes(normalizedSearchTerm);
 
                                 return (
                                     <div
-                                        key={virtualRow.key}  data-index={virtualRow.index} ref={rowVirtualizer.measureElement}
-                                        className="absolute left-0 top-0 grid w-full grid-cols-[4rem_1fr]"
-                                        style={{transform: `translateY(${virtualRow.start}px)`, }}>
-                                            
-                                        <span className="select-none pr-4 text-right text-slate-600">
+                                        key={virtualRow.key} data-index={virtualRow.index} ref={rowVirtualizer.measureElement}
+                                        className={`absolute left-0 top-0 grid w-full grid-cols-[4rem_1fr] ${
+                                            isCurrentMatch
+                                                ? "bg-cyan-500/15"
+                                                : isSearchMatch
+                                                  ? "bg-amber-500/10"
+                                                  : ""
+                                        }`}
+                                        style={{ transform: `translateY(${virtualRow.start}px)`, }}>
+
+                                        <span className={`select-none pr-4 text-right ${isCurrentMatch ? "text-cyan-300" : "text-slate-600"}`}>
                                             {virtualRow.index + 1}
                                         </span>
                                         <span className="whitespace-pre-wrap break-words text-slate-300">
