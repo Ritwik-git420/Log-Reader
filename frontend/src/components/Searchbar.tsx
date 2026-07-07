@@ -52,7 +52,7 @@ export default function Searchbar({
     <div className="flex shrink-0 items-center">
       <div
         className={`flex h-9 items-center overflow-hidden rounded-md border border-slate-700 bg-slate-950 text-slate-300 transition-all duration-200 focus-within:border-cyan-500 ${
-          isOpen || value ? "w-96 px-1.5" : "w-9 px-0"
+          isOpen || value ? "w-78 px-1.5" : "w-9 px-0"
         }`}
       >
         <button
