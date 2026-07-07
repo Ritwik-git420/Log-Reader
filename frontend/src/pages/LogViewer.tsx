@@ -4,9 +4,8 @@ import { useAppSelector } from "../store/hooks";
 import { getLogContent } from "../services/logservice";
 import { openFileByPath } from "../services/folderService";
 import { watchFileChanges } from "../services/filewatch";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import Searchbar from "../components/Searchbar";
-import DisplayFile from "../components/DisplayFile";
+import DisplayFile, { type DisplayFileHandle } from "./DisplayFile";
 
 function LogViewer() {
     const files = useAppSelector((state) => state.logFile.files);
@@ -14,19 +13,13 @@ function LogViewer() {
     const [content, setContent] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
-    const logScrollRef = useRef<HTMLDivElement>(null);
+    const displayFileRef = useRef<DisplayFileHandle>(null);
     const lines = useMemo(() => content.split("\n"), [content]);
-    const rowVirtualizer = useVirtualizer({
-        count: lines.length,    //total lines in the file
-        getScrollElement: () => logScrollRef.current,     //points the virtualizer at scroll continer 
-        estimateSize: () => 28,
-        overscan: 10,
-    });
-    
+
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
     const matchingLineIndexes = useMemo(() => {
-        if (!normalizedSearchTerm)  return [];   //if nothing typed in search we return simply
+        if (!normalizedSearchTerm) return [];   //if nothing typed in search we return simply
 
         //find the searched term in the lines
         return lines.reduce<number[]>((matches, line, index) => {
@@ -74,14 +67,9 @@ function LogViewer() {
     }, [activeFileId, files]);
 
     useEffect(() => {
-        const scrollContainer = logScrollRef.current;
-
-        if (!scrollContainer) {
-            return;
-        }
-
+        // scrolling is DisplayFile's job now - just ask it to do it
         requestAnimationFrame(() => {
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            displayFileRef.current?.scrollToBottom();
         });
     }, [content, activeFileId]);
 
@@ -93,10 +81,10 @@ function LogViewer() {
         }
 
         setCurrentMatchIndex(0);
-        rowVirtualizer.scrollToIndex(matchingLineIndexes[0], {
+        displayFileRef.current?.scrollToIndex(matchingLineIndexes[0], {
             align: "center",  //aligns the match at the center
         });
-    }, [matchingLineIndexes, rowVirtualizer]);
+    }, [matchingLineIndexes]);
 
     // to track live updates in the active file using watchdog
     useEffect(() => {
@@ -112,7 +100,7 @@ function LogViewer() {
         return () => stopWatching();
     }, [files, activeFileId]);
 
-    function goToMatch(matchIndex: number) {   
+    function goToMatch(matchIndex: number) {
         const lineIndex = matchingLineIndexes[matchIndex];
 
         if (lineIndex === undefined) {
@@ -120,7 +108,7 @@ function LogViewer() {
         }
 
         setCurrentMatchIndex(matchIndex);
-        rowVirtualizer.scrollToIndex(lineIndex, {
+        displayFileRef.current?.scrollToIndex(lineIndex, {
             align: "center",
         });
     }
@@ -182,9 +170,8 @@ function LogViewer() {
                     </div>
 
                     <DisplayFile
-                        logScrollRef={logScrollRef}
+                        ref={displayFileRef}
                         lines={lines}
-                        rowVirtualizer={rowVirtualizer}
                         currentMatchLineIndex={currentMatchLineIndex}
                         normalizedSearchTerm={normalizedSearchTerm}
                     />
