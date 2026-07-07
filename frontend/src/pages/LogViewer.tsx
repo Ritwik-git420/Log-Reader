@@ -14,6 +14,13 @@ function LogViewer() {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
     const displayFileRef = useRef<DisplayFileHandle>(null);
+    // caches loaded content per fileId so switching back to an already-viewed
+    // tab doesn't hit the backend again. useRef, not useState - updating this
+    // shouldn't itself trigger a re-render, it's just a lookup table.
+    const contentCacheRef = useRef<Record<string, string>>({});
+    // remembers the topmost visible line per tab, so switching back restores
+    // where you left off instead of always landing on line 1
+    const scrollPositionsRef = useRef<Record<string, number>>({});
     const lines = useMemo(() => content.split("\n"), [content]);
 
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -39,39 +46,51 @@ function LogViewer() {
             return;
         }
 
-        const activeFile = files.find((f) => f.fileId === activeFileId);
+        const fileId = activeFileId;
+        const activeFile = files.find((f) => f.fileId === fileId);
         if (!activeFile) return;
 
         async function loadContent() {
-            setContent("Loading file content...");
+            const cached = contentCacheRef.current[fileId];
 
-            try {
-                //loading content from backend - different source, different endpoint
-                const data =
-                    activeFile!.source === "folder"
-                        ? await openFileByPath(activeFile!.fileId)
-                        : await getLogContent(activeFile!.fileId);
+            if (cached !== undefined) {
+                // already loaded this tab before - use it, skip the network call entirely
+                setContent(cached);
+            } else {
+                setContent("Loading file content...");
 
-                if ("content" in data) {
-                    setContent(data.content);
-                } else {
-                    setContent(data.message);
+                try {
+                    //loading content from backend - different source, different endpoint
+                    const data =
+                        activeFile!.source === "folder"
+                            ? await openFileByPath(activeFile!.fileId)
+                            : await getLogContent(activeFile!.fileId);
+
+                    if ("content" in data) {
+                        contentCacheRef.current[fileId] = data.content;
+                        setContent(data.content);
+                    } else {
+                        setContent(data.message);
+                        return; // don't touch scroll position for an error message
+                    }
+                } catch (error) {
+                    console.error("Failed to load log content:", error);
+                    setContent("Failed to load file content.");
+                    return;
                 }
-            } catch (error) {
-                console.error("Failed to load log content:", error);
-                setContent("Failed to load file content.");
             }
+
+            // restore this tab's saved position, or default to the top (line 1)
+            // if it's never been scrolled before
+            requestAnimationFrame(() => {
+                displayFileRef.current?.scrollToIndex(
+                    scrollPositionsRef.current[fileId] ?? 0,
+                );
+            });
         }
 
         loadContent();
     }, [activeFileId, files]);
-
-    useEffect(() => {
-        // scrolling is DisplayFile's job now - just ask it to do it
-        requestAnimationFrame(() => {
-            displayFileRef.current?.scrollToBottom();
-        });
-    }, [content, activeFileId]);
 
     useEffect(() => {
         //auto jump when search changes
@@ -94,7 +113,17 @@ function LogViewer() {
         if (!activeFile || activeFile.source !== "folder") return;
 
         const stopWatching = watchFileChanges(activeFile.fileId, (newContent) => {
-            setContent((prev) => prev + newContent);
+            setContent((prev) => {
+                const updated = prev + newContent;
+                // keep the cache in sync - otherwise switching away and back
+                // to a tab being live-tailed would show stale, pre-update content
+                contentCacheRef.current[activeFileId] = updated;
+                return updated;
+            });
+
+            requestAnimationFrame(() => {
+                displayFileRef.current?.scrollToBottom();
+            });
         });
 
         return () => stopWatching();
@@ -174,6 +203,11 @@ function LogViewer() {
                         lines={lines}
                         currentMatchLineIndex={currentMatchLineIndex}
                         normalizedSearchTerm={normalizedSearchTerm}
+                        onScrollPositionChange={(topLineIndex) => {
+                            if (activeFileId) {
+                                scrollPositionsRef.current[activeFileId] = topLineIndex;
+                            }
+                        }}
                     />
                 </>
             )}

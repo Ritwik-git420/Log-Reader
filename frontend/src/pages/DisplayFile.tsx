@@ -15,6 +15,7 @@ type DisplayFileProps = {
     lines: string[];
     currentMatchLineIndex: number;
     normalizedSearchTerm: string;
+    onScrollPositionChange?: (topLineIndex: number) => void;
 };
 
 // splits a line into plain-text segments and highlighted-match segments,
@@ -56,7 +57,10 @@ function highlightLine(line: string, term: string): ReactNode {
 }
 
 const DisplayFile = forwardRef<DisplayFileHandle, DisplayFileProps>(
-    function DisplayFile({ lines, currentMatchLineIndex, normalizedSearchTerm }, ref) {
+    function DisplayFile(
+        { lines, currentMatchLineIndex, normalizedSearchTerm, onScrollPositionChange },
+        ref,
+    ) {
         // scroll ref + virtualizer now live HERE, not in LogViewer -
         // scrolling is this component's own concern, it owns its own re-renders
         const logScrollRef = useRef<HTMLDivElement>(null);
@@ -80,9 +84,19 @@ const DisplayFile = forwardRef<DisplayFileHandle, DisplayFileProps>(
             },
         }));
 
+        // reports the topmost currently-visible line index as the user scrolls,
+        // so LogViewer can remember "where you were" per tab
+        const handleScroll = () => {
+            const topItem = rowVirtualizer.getVirtualItems()[0];
+            if (topItem) {
+                onScrollPositionChange?.(topItem.index);
+            }
+        };
+
         return (
             <div
                 ref={logScrollRef}
+                onScroll={handleScroll}
                 className="scrollbar-hidden flex-1 overflow-auto bg-slate-950 p-4"
             >
                 <div

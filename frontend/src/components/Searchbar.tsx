@@ -35,16 +35,19 @@ export default function Searchbar({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter" || matchCount === 0) {
+    if (matchCount === 0) {
       return;
     }
 
-    event.preventDefault();
-
-    if (event.shiftKey) {
-      onPreviousMatch?.();
-    } else {
+    if (event.key === "ArrowDown" || (event.key === "Enter" && !event.shiftKey)) {
+      event.preventDefault();
       onNextMatch?.();
+      return;
+    }
+
+    if (event.key === "ArrowUp" || (event.key === "Enter" && event.shiftKey)) {
+      event.preventDefault();
+      onPreviousMatch?.();
     }
   }
 
